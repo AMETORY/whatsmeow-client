@@ -60,7 +60,11 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 			}
 			if WaDevice.Webhook != "" {
 				// LogJson(v.Message)
-				b, _ := json.Marshal(v.Message)
+				b, _ := json.Marshal(map[string]interface{}{
+					"message": v.Message,
+					"sender":  v.Info.Chat.User,
+					"jid":     client.Store.ID.String(),
+				})
 
 				// fmt.Println(string(b))
 				req, err := http.NewRequest("POST", WaDevice.Webhook, bytes.NewBuffer(b))
@@ -68,6 +72,9 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					fmt.Println(err)
 				}
 				req.Header.Set("Content-Type", "application/json")
+				if WaDevice.HeaderKey != "" {
+					req.Header.Set("X-Header", WaDevice.HeaderKey)
+				}
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {

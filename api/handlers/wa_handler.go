@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -197,7 +198,9 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
-	var dataMessage *waE2E.Message = &waE2E.Message{}
+	var dataMessage *waE2E.Message = &waE2E.Message{
+		Conversation: proto.String(input.Text),
+	}
 	if input.FileType != "" && input.FileUrl != "" {
 		resp, err := http.Get(input.FileUrl)
 		if err != nil {
@@ -224,6 +227,8 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 			fileType = whatsmeow.MediaAudio
 		case "document":
 			fileType = whatsmeow.MediaDocument
+		default:
+
 		}
 
 		respUpload, err := client.Upload(wh.sessions.Ctx, fileBytes, fileType)
@@ -234,6 +239,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		switch fileType {
 		case whatsmeow.MediaImage:
+			dataMessage.Conversation = nil
 			dataMessage.ImageMessage = &waE2E.ImageMessage{
 				Caption:       proto.String(input.Text),
 				Mimetype:      proto.String(mimeType),
@@ -245,6 +251,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileLength:    &respUpload.FileLength,
 			}
 		case whatsmeow.MediaVideo:
+			dataMessage.Conversation = nil
 			dataMessage.VideoMessage = &waE2E.VideoMessage{
 				Caption:       proto.String(input.Text),
 				Mimetype:      proto.String(mimeType),
@@ -256,6 +263,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileLength:    &respUpload.FileLength,
 			}
 		case whatsmeow.MediaAudio:
+			dataMessage.Conversation = nil
 			dataMessage.AudioMessage = &waE2E.AudioMessage{
 				Mimetype:      proto.String(mimeType),
 				URL:           &respUpload.URL,
@@ -266,6 +274,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileLength:    &respUpload.FileLength,
 			}
 		case whatsmeow.MediaDocument:
+			dataMessage.Conversation = nil
 			dataMessage.DocumentMessage = &waE2E.DocumentMessage{
 				Caption:       proto.String(input.Text),
 				Mimetype:      proto.String(mimeType),
@@ -276,11 +285,12 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileSHA256:    respUpload.FileSHA256,
 				FileLength:    &respUpload.FileLength,
 			}
-		default:
-			dataMessage.Conversation = proto.String(input.Text)
+
 		}
 
 	}
+
+	LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
@@ -288,4 +298,12 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "ok", "jid": resp})
+}
+func LogJson(v interface{}) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(string(data))
 }
