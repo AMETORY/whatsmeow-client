@@ -96,6 +96,31 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 	c.Data(200, http.DetectContentType(response), response)
 }
 
+func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
+	id := c.Param("id")
+	var input struct {
+		Webhook string `json:"webhook"`
+	}
+	var data mdl.WaDevice
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
+		return
+	}
+
+	err = wh.sessions.DB.Where("j_id = ? OR session = ?", id, id).First(&data).Error
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	data.Webhook = input.Webhook
+	err = wh.sessions.DB.Save(&data).Error
+	if err != nil {
+		fmt.Println(err)
+	}
+	c.JSON(200, gin.H{"message": "ok"})
+
+}
 func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	var input mdl.WaDevice
 	err := c.ShouldBindBodyWithJSON(&input)
