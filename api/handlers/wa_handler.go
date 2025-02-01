@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 
@@ -162,7 +163,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		}
 	}
 
-	fmt.Println("CLIENT", client)
+	// fmt.Println("CLIENT", client)
 	// clientLog := waLog.Stdout("Client", "INFO", true)
 	// client := whatsmeow.NewClient(deviceStore, clientLog)
 
@@ -171,9 +172,91 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
-	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, &waE2E.Message{
-		Conversation: proto.String(input.Text),
-	})
+	var dataMessage *waE2E.Message = &waE2E.Message{}
+	if input.FileType != "" && input.FileUrl != "" {
+		resp, err := http.Get(input.FileUrl)
+		if err != nil {
+			c.JSON(500, gin.H{"message": "failed to fetch file", "response": err.Error()})
+			return
+		}
+		defer resp.Body.Close()
+
+		fileBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			c.JSON(500, gin.H{"message": "failed to read file", "response": err.Error()})
+			return
+		}
+
+		mimeType := http.DetectContentType(fileBytes)
+
+		var fileType whatsmeow.MediaType
+		switch input.FileType {
+		case "image":
+			fileType = whatsmeow.MediaImage
+		case "video":
+			fileType = whatsmeow.MediaVideo
+		case "audio":
+			fileType = whatsmeow.MediaAudio
+		case "document":
+			fileType = whatsmeow.MediaDocument
+		}
+
+		respUpload, err := client.Upload(wh.sessions.Ctx, fileBytes, fileType)
+		if err != nil {
+			c.JSON(500, gin.H{"message": "failed to upload file", "response": err.Error()})
+			return
+		}
+
+		switch fileType {
+		case whatsmeow.MediaImage:
+			dataMessage.ImageMessage = &waE2E.ImageMessage{
+				Caption:       proto.String(input.Text),
+				Mimetype:      proto.String(mimeType),
+				URL:           &respUpload.URL,
+				DirectPath:    &respUpload.DirectPath,
+				MediaKey:      respUpload.MediaKey,
+				FileEncSHA256: respUpload.FileEncSHA256,
+				FileSHA256:    respUpload.FileSHA256,
+				FileLength:    &respUpload.FileLength,
+			}
+		case whatsmeow.MediaVideo:
+			dataMessage.VideoMessage = &waE2E.VideoMessage{
+				Caption:       proto.String(input.Text),
+				Mimetype:      proto.String(mimeType),
+				URL:           &respUpload.URL,
+				DirectPath:    &respUpload.DirectPath,
+				MediaKey:      respUpload.MediaKey,
+				FileEncSHA256: respUpload.FileEncSHA256,
+				FileSHA256:    respUpload.FileSHA256,
+				FileLength:    &respUpload.FileLength,
+			}
+		case whatsmeow.MediaAudio:
+			dataMessage.AudioMessage = &waE2E.AudioMessage{
+				Mimetype:      proto.String(mimeType),
+				URL:           &respUpload.URL,
+				DirectPath:    &respUpload.DirectPath,
+				MediaKey:      respUpload.MediaKey,
+				FileEncSHA256: respUpload.FileEncSHA256,
+				FileSHA256:    respUpload.FileSHA256,
+				FileLength:    &respUpload.FileLength,
+			}
+		case whatsmeow.MediaDocument:
+			dataMessage.DocumentMessage = &waE2E.DocumentMessage{
+				Caption:       proto.String(input.Text),
+				Mimetype:      proto.String(mimeType),
+				URL:           &respUpload.URL,
+				DirectPath:    &respUpload.DirectPath,
+				MediaKey:      respUpload.MediaKey,
+				FileEncSHA256: respUpload.FileEncSHA256,
+				FileSHA256:    respUpload.FileSHA256,
+				FileLength:    &respUpload.FileLength,
+			}
+		default:
+			dataMessage.Conversation = proto.String(input.Text)
+		}
+
+	}
+	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
 		return
