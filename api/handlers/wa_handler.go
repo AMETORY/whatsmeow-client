@@ -262,5 +262,5 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "ok", "response": resp})
+	c.JSON(200, gin.H{"message": "ok", "jid": resp})
 }
