@@ -12,6 +12,9 @@ require (
 )
 
 require (
+	github.com/Rhymen/go-whatsapp v0.1.0 // indirect
+	github.com/ddz/whatsapp-media-decrypt v0.0.0-20201002141908-42e39010c2c8 // indirect
+	github.com/golang/protobuf v1.5.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 )

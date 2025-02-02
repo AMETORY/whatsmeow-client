@@ -1,12 +1,14 @@
 package handlers
 
 import (
+	bgContext "context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"time"
 
 	mdl "github.com/AMETORY/whatsmeow-client/model"
 	"github.com/AMETORY/whatsmeow-client/objects"
@@ -29,6 +31,12 @@ type WaHandler struct {
 
 func NewWaHandler(sessions *objects.WaSession) *WaHandler {
 	return &WaHandler{sessions: sessions}
+}
+
+func (wh *WaHandler) GetDevicesHandler(c *gin.Context) {
+	var devices []mdl.WaDevice
+	wh.sessions.DB.Find(&devices)
+	c.JSON(200, gin.H{"message": "ok", "data": devices})
 }
 
 func (wh *WaHandler) GetQRCodeHandler(c *gin.Context) {
@@ -73,6 +81,13 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
 		return
 	}
+
+	var WaDevice mdl.WaDevice
+	err = wh.sessions.DB.Where("j_id = ?", id).Delete(&WaDevice).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
+		return
+	}
 	c.JSON(200, gin.H{"message": "ok"})
 }
 
@@ -100,7 +115,8 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
 	id := c.Param("id")
 	var input struct {
-		Webhook string `json:"webhook"`
+		Webhook   string `json:"webhook"`
+		HeaderKey string `json:"header_key"`
 	}
 	var data mdl.WaDevice
 	err := c.ShouldBindJSON(&input)
@@ -115,7 +131,8 @@ func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
 	}
 
 	data.Webhook = input.Webhook
-	err = wh.sessions.DB.Save(&data).Error
+	data.HeaderKey = input.HeaderKey
+	err = wh.sessions.DB.Where("j_id = ? OR session = ?", id, id).Save(&data).Error
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -135,7 +152,9 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	clientLog := waLog.Stdout("Client", "INFO", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
 	client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
-	qrChan, _ := client.GetQRChannel(wh.sessions.Ctx)
+	ctx, cancel := bgContext.WithTimeout(wh.sessions.Ctx, 30*time.Second)
+	defer cancel()
+	qrChan, _ := client.GetQRChannel(ctx)
 	err = client.Connect()
 	if err != nil {
 		panic(err)
