@@ -1,0 +1,2 @@
+### Get Contact
+GET http://localhost:8088/v1/contacts?jid=6283899133519:42@s.whatsapp.net&search=

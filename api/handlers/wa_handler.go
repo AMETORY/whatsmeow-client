@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	mdl "github.com/AMETORY/whatsmeow-client/model"
@@ -112,6 +113,50 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 	c.Data(200, http.DetectContentType(response), response)
 }
 
+func (wh *WaHandler) GetContactHandler(c *gin.Context) {
+	var contacts []mdl.WhatsmeowContact
+	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed", "error": err.Error()})
+		return
+	}
+	pageSize, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed", "error": err.Error()})
+		return
+	}
+	offset := (page - 1) * pageSize
+	var count int64
+	err = wh.sessions.DB.Model(&mdl.WhatsmeowContact{}).Count(&count).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed", "error": err.Error()})
+		return
+	}
+	JID := c.DefaultQuery("jid", "")
+	if JID == "" {
+		c.JSON(500, gin.H{"message": "failed", "error": "JID is required"})
+		return
+	}
+
+	hasNext := count > int64((page * pageSize))
+	hasPrevious := page > 1
+	search := c.DefaultQuery("search", "")
+	err = wh.sessions.DB.Where("our_jid = ?", JID).Where("( their_jid LIKE ? OR full_name LIKE ? OR push_name LIKE ? OR business_name LIKE ?)",
+		"%"+search+"%", "%"+search+"%", "%"+search+"%", "%"+search+"%").Offset(offset).Limit(pageSize).Find(&contacts).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed", "response": err.Error()})
+		return
+	}
+
+	for i, v := range contacts {
+		userJid, _ := types.ParseJID(v.TheirJid)
+		v.PhoneNumber = userJid.User
+
+		contacts[i] = v
+	}
+
+	c.JSON(200, gin.H{"message": "ok", "data": gin.H{"items": contacts, "total": count, "page": page, "limit": pageSize, "has_next": hasNext, "has_previous": hasPrevious}})
+}
 func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
 	id := c.Param("id")
 	var input struct {

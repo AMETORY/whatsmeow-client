@@ -101,6 +101,7 @@ func main() {
 	v1 := r.Group("/v1")
 
 	routes.NewWaRoutes(v1, sessions)
+	r.Static("/static", "./tmp")
 
 	r.POST("/webhook", func(ctx *gin.Context) {
 		req := ctx.Request.Body

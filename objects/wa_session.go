@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	mdl "github.com/AMETORY/whatsmeow-client/model"
+	"github.com/AMETORY/whatsmeow-client/utils"
 
 	"go.mau.fi/whatsmeow"
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -59,12 +60,83 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 			}
 			if WaDevice.Webhook != "" {
+				var isDownload = false
+				var mediaPath string
+				var mimeType, directPath, mmsType string
+				var encFileHash, fileHash, mediaKey []byte
+				var fileLength int
+				var mediaType whatsmeow.MediaType
 				// LogJson(v.Message)
-				b, _ := json.Marshal(map[string]interface{}{
+				if v.Message.GetImageMessage() != nil {
+					img := v.Message.GetImageMessage()
+					mediaType = whatsmeow.MediaImage
+					directPath = img.GetDirectPath()
+					encFileHash = img.GetFileEncSHA256()
+					fileHash = img.GetFileSHA256()
+					mediaKey = img.GetMediaKey()
+					fileLength = int(img.GetFileLength())
+					isDownload = true
+					mimeType = img.GetMimetype()
+				}
+
+				if v.Message.GetVideoMessage() != nil {
+					video := v.Message.GetVideoMessage()
+					mediaType = whatsmeow.MediaVideo
+					directPath = video.GetDirectPath()
+					encFileHash = video.GetFileEncSHA256()
+					fileHash = video.GetFileSHA256()
+					mediaKey = video.GetMediaKey()
+					fileLength = int(video.GetFileLength())
+					isDownload = true
+					mimeType = video.GetMimetype()
+				}
+				if v.Message.GetAudioMessage() != nil {
+					audio := v.Message.GetAudioMessage()
+					mediaType = whatsmeow.MediaAudio
+					directPath = audio.GetDirectPath()
+					encFileHash = audio.GetFileEncSHA256()
+					fileHash = audio.GetFileSHA256()
+					mediaKey = audio.GetMediaKey()
+					fileLength = int(audio.GetFileLength())
+					isDownload = true
+					mimeType = audio.GetMimetype()
+				}
+				if v.Message.GetDocumentMessage() != nil {
+					doc := v.Message.GetDocumentMessage()
+					mediaType = whatsmeow.MediaDocument
+					directPath = doc.GetDirectPath()
+					encFileHash = doc.GetFileEncSHA256()
+					fileHash = doc.GetFileSHA256()
+					mediaKey = doc.GetMediaKey()
+					fileLength = int(doc.GetFileLength())
+					isDownload = true
+					mimeType = doc.GetMimetype()
+				}
+
+				if isDownload {
+					mediaPath2, err := utils.DownloadMedia(client, mimeType, directPath, encFileHash, fileHash, mediaKey, fileLength, mediaType, mmsType)
+					if err == nil {
+						mediaPath = mediaPath2
+					} else {
+						fmt.Println("ERROR", err)
+					}
+				} else {
+					mimeType = ""
+				}
+
+				body := map[string]interface{}{
 					"message": v.Message,
 					"sender":  v.Info.Chat.User,
 					"jid":     client.Store.ID.String(),
-				})
+				}
+				if mediaPath != "" {
+					body["media_path"] = mediaPath
+					body["mime_type"] = mimeType
+
+				}
+
+				utils.LogJson(body)
+				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))
 				req, err := http.NewRequest("POST", WaDevice.Webhook, bytes.NewBuffer(b))
@@ -80,7 +152,9 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				if err != nil {
 					fmt.Println(err)
 				}
-				defer resp.Body.Close()
+				if resp != nil && resp.Body != nil {
+					defer resp.Body.Close()
+				}
 
 			}
 		}
