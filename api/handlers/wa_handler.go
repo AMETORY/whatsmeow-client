@@ -113,6 +113,35 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 	c.Data(200, http.DetectContentType(response), response)
 }
 
+func (wh *WaHandler) GetGroupsHandler(c *gin.Context) {
+	id := c.Param("id")
+	jid, err := types.ParseJID(id)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	var client *whatsmeow.Client
+	for _, v := range wh.sessions.Clients {
+
+		if v.Store.ID.String() == jid.String() {
+			client = v
+		}
+	}
+
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+
+	groups, err := client.GetJoinedGroups()
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "ok", "data": groups})
+}
 func (wh *WaHandler) GetContactHandler(c *gin.Context) {
 	var contacts []mdl.WhatsmeowContact
 	page, err := strconv.Atoi(c.DefaultQuery("page", "1"))

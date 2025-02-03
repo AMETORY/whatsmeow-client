@@ -135,7 +135,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 				}
 
-				utils.LogJson(body)
+				// utils.LogJson(body)
 				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))

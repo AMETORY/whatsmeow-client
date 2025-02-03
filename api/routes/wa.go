@@ -15,6 +15,7 @@ func NewWaRoutes(r *gin.RouterGroup, sessions *objects.WaSession) {
 	r.GET("/devices", handlers.GetDevicesHandler)
 	r.PUT("/update-webhook/:id", handlers.UpdateWebhookHandler)
 	r.GET("/contacts", handlers.GetContactHandler)
+	r.GET("/groups/:id", handlers.GetGroupsHandler)
 	r.GET("/get-qr-image/:id", handlers.GetQRImageHandler)
 	r.DELETE("/device-delete/:id", handlers.DeleteDeviceHandler)
 
