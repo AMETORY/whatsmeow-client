@@ -66,6 +66,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				var encFileHash, fileHash, mediaKey []byte
 				var fileLength int
 				var mediaType whatsmeow.MediaType
+
 				// LogJson(v.Message)
 				if v.Message.GetImageMessage() != nil {
 					img := v.Message.GetImageMessage()
@@ -125,9 +126,11 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				}
 
 				body := map[string]interface{}{
-					"message": v.Message,
-					"sender":  v.Info.Chat.User,
-					"jid":     client.Store.ID.String(),
+					"info":       v.Info,
+					"message":    v.Message,
+					"sender":     v.Info.Chat.User,
+					"jid":        client.Store.ID.String(),
+					"session_id": v.Info.Chat.String(),
 				}
 				if mediaPath != "" {
 					body["media_path"] = mediaPath
@@ -135,7 +138,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 				}
 
-				// utils.LogJson(body)
+				utils.LogJson(body)
 				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))
