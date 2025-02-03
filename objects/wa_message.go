@@ -6,4 +6,5 @@ type WaMessage struct {
 	FileType string `json:"file_type"`
 	FileUrl  string `json:"file_url"`
 	To       string `json:"to"`
+	IsGroup  bool   `json:"is_group"`
 }

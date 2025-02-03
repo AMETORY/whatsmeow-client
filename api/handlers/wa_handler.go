@@ -113,6 +113,41 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 	c.Data(200, http.DetectContentType(response), response)
 }
 
+func (wh *WaHandler) GetGroupInfoHandler(c *gin.Context) {
+	id := c.Param("id")
+	jid, err := types.ParseJID(id)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+	groupId := c.Param("groupId")
+	jgroupId, err := types.ParseJID(groupId)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	var client *whatsmeow.Client
+	for _, v := range wh.sessions.Clients {
+
+		if v.Store.ID.String() == jid.String() {
+			client = v
+		}
+	}
+
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+	info, err := client.GetGroupInfo(jgroupId)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "ok", "data": info})
+}
+
 func (wh *WaHandler) GetGroupsHandler(c *gin.Context) {
 	id := c.Param("id")
 	jid, err := types.ParseJID(id)
@@ -285,8 +320,11 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	// fmt.Println("CLIENT", client)
 	// clientLog := waLog.Stdout("Client", "INFO", true)
 	// client := whatsmeow.NewClient(deviceStore, clientLog)
-
-	recipient, err := types.ParseJID(input.To + "@s.whatsapp.net")
+	receiver := input.To + "@s.whatsapp.net"
+	if input.IsGroup {
+		receiver = input.To
+	}
+	recipient, err := types.ParseJID(receiver)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
@@ -383,6 +421,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 	}
 
+	fmt.Println("recipient", recipient)
 	LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
@@ -390,7 +429,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(200, gin.H{"message": "ok", "jid": resp})
+	c.JSON(200, gin.H{"message": "ok", "data": resp})
 }
 func LogJson(v interface{}) {
 	data, err := json.MarshalIndent(v, "", "  ")
