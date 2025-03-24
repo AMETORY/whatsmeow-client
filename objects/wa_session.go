@@ -42,6 +42,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 		switch v := evt.(type) {
 		case *events.PairSuccess:
 			fmt.Println("Pair success", client.Store.ID)
+			// ws.AddSession(client)
 			qrWait <- client.Store.ID.String()
 		case *events.Connected:
 
@@ -139,7 +140,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 				}
 
-				utils.LogJson(body)
+				// utils.LogJson(body)
 				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))

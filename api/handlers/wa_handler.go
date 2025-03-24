@@ -31,6 +31,7 @@ type WaHandler struct {
 }
 
 func NewWaHandler(sessions *objects.WaSession) *WaHandler {
+
 	return &WaHandler{sessions: sessions}
 }
 
@@ -49,6 +50,36 @@ func (wh *WaHandler) GetQRCodeHandler(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{"message": "ok", "response": res})
 }
+func (wh *WaHandler) getClient(id string) *whatsmeow.Client {
+	jid, err := types.ParseJID(id)
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+	for _, v := range wh.sessions.Clients {
+		if v == nil {
+			continue
+		}
+		if v.Store == nil {
+			continue
+		}
+		if v.Store.ID == nil {
+			continue
+		}
+		if v.Store.ID.String() == jid.String() {
+			return v
+		}
+	}
+	deviceStore, err := wh.sessions.Container.GetDevice(jid)
+	if err == nil {
+		clientLog := waLog.Stdout("Client ["+deviceStore.ID.String()+"]", "INFO", true)
+		client := whatsmeow.NewClient(deviceStore, clientLog)
+		client.Connect()
+		return client
+	}
+
+	return nil
+}
 func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 	id := c.Param("id")
 	jid, err := types.ParseJID(id)
@@ -63,14 +94,7 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		return
 	}
 
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
-	}
-
+	var client *whatsmeow.Client = wh.getClient(id)
 	if client == nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
@@ -115,11 +139,7 @@ func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 
 func (wh *WaHandler) GetGroupInfoHandler(c *gin.Context) {
 	id := c.Param("id")
-	jid, err := types.ParseJID(id)
-	if err != nil {
-		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
-		return
-	}
+
 	groupId := c.Param("groupId")
 	jgroupId, err := types.ParseJID(groupId)
 	if err != nil {
@@ -127,14 +147,7 @@ func (wh *WaHandler) GetGroupInfoHandler(c *gin.Context) {
 		return
 	}
 
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
-	}
-
+	var client *whatsmeow.Client = wh.getClient(id)
 	if client == nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
@@ -150,20 +163,8 @@ func (wh *WaHandler) GetGroupInfoHandler(c *gin.Context) {
 
 func (wh *WaHandler) GetGroupsHandler(c *gin.Context) {
 	id := c.Param("id")
-	jid, err := types.ParseJID(id)
-	if err != nil {
-		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
-		return
-	}
 
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
-	}
-
+	var client *whatsmeow.Client = wh.getClient(id)
 	if client == nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
@@ -282,6 +283,8 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	}
 	response := <-qrWait
 	client.Connect()
+	client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
+	fmt.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
 	wh.sessions.AddSession(client)
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
@@ -297,24 +300,11 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		return
 	}
 
-	jid, err := types.ParseJID(input.JID)
-	if err != nil {
-		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+	var client *whatsmeow.Client = wh.getClient(input.JID)
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
-	}
 
-	fmt.Println("GET JID", jid)
-	// deviceStore, err := wh.sessions.Container.GetDevice(jid)
-	// if err != nil {
-	// 	c.JSON(500, gin.H{"message": "failed 2", "response": err.Error()})
-	// 	return
-	// }
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
 	}
 
 	// fmt.Println("CLIENT", client)
@@ -434,22 +424,8 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 func (wh *WaHandler) CheckConnectedHandler(c *gin.Context) {
 	id := c.Param("id")
-	jid, err := types.ParseJID(id)
-	if err != nil {
-		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
-		return
-	}
 
-	fmt.Println("jid", jid)
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-		fmt.Println("v", v.Store.ID.String())
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
-	}
-
+	var client *whatsmeow.Client = wh.getClient(id)
 	if client == nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
@@ -461,20 +437,8 @@ func (wh *WaHandler) CheckConnectedHandler(c *gin.Context) {
 func (wh *WaHandler) IsOnWhatsappHandler(c *gin.Context) {
 	phone := c.Param("phone")
 	id := c.Param("id")
-	jid, err := types.ParseJID(id)
-	if err != nil {
-		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
-		return
-	}
 
-	var client *whatsmeow.Client
-	for _, v := range wh.sessions.Clients {
-
-		if v.Store.ID.String() == jid.String() {
-			client = v
-		}
-	}
-
+	var client *whatsmeow.Client = wh.getClient(id)
 	if client == nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
