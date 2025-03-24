@@ -12,6 +12,8 @@ func NewWaRoutes(r *gin.RouterGroup, sessions *objects.WaSession) {
 	r.POST("/send-message", handlers.SendMessageHandler)
 	r.POST("/create-qr", handlers.CreateQRHandler)
 	r.GET("/get-qr/:id", handlers.GetQRCodeHandler)
+	r.GET("/connected/:id", handlers.CheckConnectedHandler)
+	r.GET("/check-number/:id/:phone", handlers.IsOnWhatsappHandler)
 	r.GET("/devices", handlers.GetDevicesHandler)
 	r.PUT("/update-webhook/:id", handlers.UpdateWebhookHandler)
 	r.GET("/contacts", handlers.GetContactHandler)

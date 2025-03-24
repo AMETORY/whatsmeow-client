@@ -125,12 +125,13 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					mimeType = ""
 				}
 
-				body := map[string]interface{}{
-					"info":       v.Info,
-					"message":    v.Message,
-					"sender":     v.Info.Chat.User,
-					"jid":        client.Store.ID.String(),
-					"session_id": v.Info.Chat.String(),
+				body := map[string]any{
+					"info":         v.Info,
+					"message":      v.Message,
+					"sender":       v.Info.Chat.User,
+					"jid":          client.Store.ID.String(),
+					"session_id":   v.Info.Chat.String(),
+					"session_name": WaDevice.Session,
 				}
 				if mediaPath != "" {
 					body["media_path"] = mediaPath

@@ -286,7 +286,7 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
 	wh.sessions.DB.Create(&input)
-	c.JSON(200, gin.H{"message": "ok", "response": response})
+	c.JSON(200, gin.H{"message": "ok", "response": response, "data": input})
 }
 func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
@@ -430,6 +430,64 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "ok", "data": resp})
+}
+
+func (wh *WaHandler) CheckConnectedHandler(c *gin.Context) {
+	id := c.Param("id")
+	jid, err := types.ParseJID(id)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	fmt.Println("jid", jid)
+	var client *whatsmeow.Client
+	for _, v := range wh.sessions.Clients {
+		fmt.Println("v", v.Store.ID.String())
+
+		if v.Store.ID.String() == jid.String() {
+			client = v
+		}
+	}
+
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+	c.JSON(200, gin.H{"message": "ok", "is_connected": client.IsConnected()})
+}
+
+func (wh *WaHandler) IsOnWhatsappHandler(c *gin.Context) {
+	phone := c.Param("phone")
+	id := c.Param("id")
+	jid, err := types.ParseJID(id)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	var client *whatsmeow.Client
+	for _, v := range wh.sessions.Clients {
+
+		if v.Store.ID.String() == jid.String() {
+			client = v
+		}
+	}
+
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+
+	isOnWhatsapp, err := client.IsOnWhatsApp([]string{phone})
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "ok", "is_on_whatsapp": isOnWhatsapp})
 }
 func LogJson(v interface{}) {
 	data, err := json.MarshalIndent(v, "", "  ")
