@@ -75,6 +75,7 @@ func (wh *WaHandler) getClient(id string) *whatsmeow.Client {
 		clientLog := waLog.Stdout("Client ["+deviceStore.ID.String()+"]", "INFO", true)
 		client := whatsmeow.NewClient(deviceStore, clientLog)
 		client.Connect()
+		// client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
 		return client
 	}
 
