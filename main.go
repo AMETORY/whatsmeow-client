@@ -11,9 +11,11 @@ import (
 	"github.com/AMETORY/whatsmeow-client/service"
 
 	"github.com/gin-gonic/gin"
-	_ "github.com/mattn/go-sqlite3"
+	// _ "modernc.org/sqlite"
 
+	_ "github.com/lib/pq"
 	"go.mau.fi/whatsmeow"
+
 	// waE2E "go.mau.fi/whatsmeow/binary/proto"
 
 	"go.mau.fi/whatsmeow/store/sqlstore"
@@ -31,7 +33,8 @@ func main() {
 
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	// Make sure you add appropriate DB connector imports, e.g. github.com/mattn/go-sqlite3 for SQLite as we did in this minimal working example
-	container, err := sqlstore.New("sqlite3", "file:wa.db?_foreign_keys=on", dbLog)
+	container, err := sqlstore.New("postgres", "user=postgres dbname=whatsapp sslmode=disable password=balakutak", dbLog)
+	// container, err := sqlstore.New("sqlite3", "file:wa.db?_foreign_keys=on", dbLog)
 	if err != nil {
 		panic(err)
 	}
