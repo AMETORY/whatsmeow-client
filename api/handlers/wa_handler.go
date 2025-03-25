@@ -70,14 +70,14 @@ func (wh *WaHandler) getClient(id string) *whatsmeow.Client {
 			return v
 		}
 	}
-	deviceStore, err := wh.sessions.Container.GetDevice(jid)
-	if err == nil {
-		clientLog := waLog.Stdout("Client ["+deviceStore.ID.String()+"]", "INFO", true)
-		client := whatsmeow.NewClient(deviceStore, clientLog)
-		client.Connect()
-		// client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
-		return client
-	}
+	// deviceStore, err := wh.sessions.Container.GetDevice(jid)
+	// if err == nil {
+	// 	clientLog := waLog.Stdout("Client ["+deviceStore.ID.String()+"]", "INFO", true)
+	// 	client := whatsmeow.NewClient(deviceStore, clientLog)
+	// 	client.Connect()
+	// 	// client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
+	// 	return client
+	// }
 
 	return nil
 }
@@ -286,7 +286,7 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	client.Connect()
 	client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
 	fmt.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
-	wh.sessions.AddSession(client)
+	// wh.sessions.AddSession(client)
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
 	wh.sessions.DB.Create(&input)
