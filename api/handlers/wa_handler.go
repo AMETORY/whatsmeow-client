@@ -284,9 +284,9 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	}
 	response := <-qrWait
 	client.Connect()
-	client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
+	// client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
 	fmt.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
-	// wh.sessions.AddSession(client)
+	wh.sessions.AddSession(client)
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
 	wh.sessions.DB.Create(&input)
