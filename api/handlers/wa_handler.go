@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	mdl "github.com/AMETORY/whatsmeow-client/model"
@@ -222,6 +223,51 @@ func (wh *WaHandler) GetContactHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "ok", "data": gin.H{"items": contacts, "total": count, "page": page, "limit": pageSize, "has_next": hasNext, "has_previous": hasPrevious}})
+}
+func (wh *WaHandler) MarkReadHandler(c *gin.Context) {
+	id := c.Param("id")
+	var input struct {
+		MsgIDs []string `json:"msg_ids"`
+		ChatID string   `json:"chat_id"`
+	}
+	err := c.ShouldBindJSON(&input)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
+		return
+	}
+	var data mdl.WaDevice
+	err = wh.sessions.DB.Where("j_id = ? OR session = ?", id, id).First(&data).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	var client *whatsmeow.Client = wh.getClient(id)
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 2", "response": "client not found"})
+		return
+
+	}
+	ids := []types.MessageID{}
+	for _, v := range input.MsgIDs {
+		ids = append(ids, types.MessageID(v))
+	}
+	chatID, _ := types.ParseJID(input.ChatID + "@s.whatsapp.net")
+	senderID, _ := types.ParseJID(data.JID)
+	sender := senderID
+	if strings.ContainsRune(data.JID, ':') {
+		parts := strings.Split(data.JID, ":")
+		newSender, _ := types.ParseJID(parts[0] + "@s.whatsapp.net")
+		sender = newSender
+	}
+	fmt.Println(ids, time.Now(), sender, chatID, types.ReceiptTypeRead)
+	err = client.MarkRead(ids, time.Now(), chatID, sender, types.ReceiptTypeRead)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "ok"})
 }
 func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
 	id := c.Param("id")
