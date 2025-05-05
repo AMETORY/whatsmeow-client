@@ -309,7 +309,8 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	deviceStore := wh.sessions.Container.NewDevice()
 	clientLog := waLog.Stdout("Client", "INFO", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	if client == nil {
+	fmt.Println("client", client)
+	if client != nil {
 		client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
 	}
 	ctx, cancel := bgContext.WithTimeout(wh.sessions.Ctx, 30*time.Second)
@@ -333,12 +334,16 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	}
 	response := <-qrWait
 	client.Connect()
-	// client.AddEventHandler(wh.sessions.GetEventHandler(client, nil))
+	client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
 	fmt.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
 	wh.sessions.AddSession(client)
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
-	wh.sessions.DB.Create(&input)
+	err = wh.sessions.DB.Create(&input).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
 	c.JSON(200, gin.H{"message": "ok", "response": response, "data": input})
 }
 func (wh *WaHandler) SendMessageHandler(c *gin.Context) {

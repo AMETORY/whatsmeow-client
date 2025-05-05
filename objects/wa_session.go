@@ -39,10 +39,14 @@ func (ws *WaSession) AddSession(client *whatsmeow.Client) {
 
 func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan string) func(interface{}) {
 	var WaDevice mdl.WaDevice
-	err := ws.DB.Where("j_id = ?", client.Store.ID.String()).First(&WaDevice).Error
-	if err != nil {
-		fmt.Println(err)
+	if client.Store.ID != nil {
+		fmt.Println("client store", client.Store.ID.String())
+		err := ws.DB.Where("j_id = ?", client.Store.ID.String()).First(&WaDevice).Error
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
+
 	return func(evt interface{}) {
 		switch v := evt.(type) {
 		case *events.PairSuccess:
