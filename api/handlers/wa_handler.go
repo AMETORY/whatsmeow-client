@@ -15,6 +15,7 @@ import (
 	mdl "github.com/AMETORY/whatsmeow-client/model"
 	"github.com/AMETORY/whatsmeow-client/objects"
 	"github.com/AMETORY/whatsmeow-client/service"
+	"github.com/gabriel-vasile/mimetype"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
 	"go.mau.fi/whatsmeow/types"
@@ -308,7 +309,9 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	deviceStore := wh.sessions.Container.NewDevice()
 	clientLog := waLog.Stdout("Client", "INFO", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
+	if client == nil {
+		client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
+	}
 	ctx, cancel := bgContext.WithTimeout(wh.sessions.Ctx, 30*time.Second)
 	defer cancel()
 	qrChan, _ := client.GetQRChannel(ctx)
@@ -383,7 +386,11 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 			return
 		}
 
-		mimeType := http.DetectContentType(fileBytes)
+		mtype := mimetype.Detect(fileBytes)
+
+		mimeType := mtype.String()
+
+		fmt.Println("MIME TYPE", mimeType)
 
 		var fileType whatsmeow.MediaType
 		switch input.FileType {
@@ -404,6 +411,8 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 			c.JSON(500, gin.H{"message": "failed to upload file", "response": err.Error()})
 			return
 		}
+
+		// Extract the file name from the URL
 
 		switch fileType {
 		case whatsmeow.MediaImage:
@@ -442,6 +451,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileLength:    &respUpload.FileLength,
 			}
 		case whatsmeow.MediaDocument:
+			fileName := input.FileUrl[strings.LastIndex(input.FileUrl, "/")+1:]
 			dataMessage.Conversation = nil
 			dataMessage.DocumentMessage = &waE2E.DocumentMessage{
 				Caption:       proto.String(input.Text),
@@ -452,14 +462,34 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 				FileEncSHA256: respUpload.FileEncSHA256,
 				FileSHA256:    respUpload.FileSHA256,
 				FileLength:    &respUpload.FileLength,
+				FileName:      proto.String(fileName),
 			}
 
 		}
 
 	}
 
-	fmt.Println("recipient", recipient)
-	LogJson(dataMessage)
+	// fmt.Println("recipient", recipient)
+
+	// dataMessage.TemplateMessage = &waE2E.TemplateMessage{
+	// 	HydratedTemplate: &waE2E.TemplateMessage_HydratedFourRowTemplate{
+	// 		TemplateID: proto.String("template-1"),
+	// 		Title: &waE2E.TemplateMessage_HydratedFourRowTemplate_HydratedTitleText{
+	// 			HydratedTitleText: "Hello",
+	// 		},
+	// 		HydratedButtons: []*waE2E.HydratedTemplateButton{
+	// 			{
+	// 				Index: proto.Uint32(1),
+	// 				HydratedButton: &waE2E.HydratedTemplateButton_QuickReplyButton{
+	// 					QuickReplyButton: &waE2E.HydratedTemplateButton_HydratedQuickReplyButton{
+	// 						DisplayText: proto.String("Apa Kabar?"),
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	},
+	// }
+	// LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
