@@ -125,6 +125,16 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 	c.JSON(200, gin.H{"message": "ok"})
 }
 
+func (wh *WaHandler) GetJIDfromSessionHandler(c *gin.Context) {
+	session := c.Param("session")
+	var data mdl.WaDevice
+	err := wh.sessions.DB.Where("session = ?", session).First(&data).Error
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"message": "ok", "jid": data.JID})
+}
 func (wh *WaHandler) GetQRImageHandler(c *gin.Context) {
 	id := c.Param("id")
 	res, err := service.REDIS.Get("WA-" + id).Result()
@@ -358,12 +368,14 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	var input objects.WaMessage
 	err := c.ShouldBindBodyWithJSON(&input)
 	if err != nil {
+		fmt.Println("ERROR #1", err.Error())
 		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
 		return
 	}
 
 	var client *whatsmeow.Client = wh.getClient(input.JID)
 	if client == nil {
+		fmt.Println("ERROR #2", "NO CLIENT")
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
 
@@ -378,6 +390,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	}
 	recipient, err := types.ParseJID(receiver)
 	if err != nil {
+		fmt.Println("ERROR #3", err.Error())
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
@@ -387,6 +400,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	if input.FileType != "" && input.FileUrl != "" {
 		resp, err := http.Get(input.FileUrl)
 		if err != nil {
+			fmt.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to fetch file", "response": err.Error()})
 			return
 		}
@@ -394,6 +408,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		fileBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
+			fmt.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to read file", "response": err.Error()})
 			return
 		}
@@ -420,6 +435,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		respUpload, err := client.Upload(wh.sessions.Ctx, fileBytes, fileType)
 		if err != nil {
+			fmt.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to upload file", "response": err.Error()})
 			return
 		}
@@ -504,6 +520,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	// LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
+		fmt.Println("ERROR #5", err.Error())
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
 		return
 	}

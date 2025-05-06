@@ -21,6 +21,7 @@ func NewWaRoutes(r *gin.RouterGroup, sessions *objects.WaSession) {
 	r.GET("/contacts", handlers.GetContactHandler)
 	r.GET("/groups/:id", handlers.GetGroupsHandler)
 	r.GET("/get-qr-image/:id", handlers.GetQRImageHandler)
+	r.GET("/jid/:session", handlers.GetJIDfromSessionHandler)
 	r.GET("/get-group-info/:id/:groupId", handlers.GetGroupInfoHandler)
 	r.DELETE("/device-delete/:id", handlers.DeleteDeviceHandler)
 
