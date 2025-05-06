@@ -103,7 +103,11 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		return
 
 	}
-	client.Disconnect()
+	err = client.Logout()
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
+		return
+	}
 	err = wh.sessions.Container.DeleteDevice(deviceStore)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
@@ -116,6 +120,8 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
 		return
 	}
+	service.REDIS.Publish("SYSTEM", "RESET")
+
 	c.JSON(200, gin.H{"message": "ok"})
 }
 
@@ -344,6 +350,7 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
 		return
 	}
+	service.REDIS.Publish("SYSTEM", "RESET")
 	c.JSON(200, gin.H{"message": "ok", "response": response, "data": input})
 }
 func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
@@ -514,6 +521,25 @@ func (wh *WaHandler) CheckConnectedHandler(c *gin.Context) {
 
 	}
 	c.JSON(200, gin.H{"message": "ok", "is_connected": client.IsConnected()})
+}
+func (wh *WaHandler) DisconnectedHandler(c *gin.Context) {
+	id := c.Param("id")
+
+	var client *whatsmeow.Client = wh.getClient(id)
+	if client == nil {
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+
+	// client.Disconnect()
+	err := client.Logout()
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
+		return
+	}
+	service.REDIS.Publish("SYSTEM", "RESET")
+	c.JSON(200, gin.H{"message": "ok"})
 }
 
 func (wh *WaHandler) IsOnWhatsappHandler(c *gin.Context) {

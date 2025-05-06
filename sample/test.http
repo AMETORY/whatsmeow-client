@@ -14,4 +14,5 @@ PUT http://localhost:8088/v1/message/6283899133519:53@s.whatsapp.net/mark-read
     "msg_ids": ["3AF152F29B50121128F0"],
     "chat_id": "6281386862886"
 }
-
+### DELETE DEVICE
+DELETE http://localhost:8088/v1/device-delete/6283899133519:57@s.whatsapp.net

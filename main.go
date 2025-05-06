@@ -9,6 +9,7 @@ import (
 	mdl "github.com/AMETORY/whatsmeow-client/model"
 	"github.com/AMETORY/whatsmeow-client/objects"
 	"github.com/AMETORY/whatsmeow-client/service"
+	"github.com/AMETORY/whatsmeow-client/worker"
 
 	"github.com/gin-gonic/gin"
 	// _ "modernc.org/sqlite"
@@ -116,6 +117,10 @@ func main() {
 
 		fmt.Println(strBody)
 	})
+
+	go func() {
+		worker.GetSystemSignal()
+	}()
 
 	r.Run(":8088")
 
