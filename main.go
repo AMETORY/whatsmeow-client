@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 
 	"github.com/AMETORY/whatsmeow-client/api/routes"
 	mdl "github.com/AMETORY/whatsmeow-client/model"
@@ -32,9 +33,19 @@ func main() {
 		panic(err)
 	}
 
+	password := os.Getenv("PASSWORD")
+	if password == "" {
+		password = "balakutak"
+	}
+
+	user := os.Getenv("USER")
+	if user == "" {
+		user = "postgres"
+	}
+
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	// Make sure you add appropriate DB connector imports, e.g. github.com/mattn/go-sqlite3 for SQLite as we did in this minimal working example
-	container, err := sqlstore.New("postgres", "user=postgres dbname=whatsapp sslmode=disable password=balakutak", dbLog)
+	container, err := sqlstore.New("postgres", "user="+user+" dbname=whatsapp sslmode=disable password="+password, dbLog)
 	// container, err := sqlstore.New("sqlite3", "file:wa.db?_foreign_keys=on", dbLog)
 	if err != nil {
 		panic(err)

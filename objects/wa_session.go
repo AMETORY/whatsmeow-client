@@ -103,7 +103,6 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				var fileLength int
 				var mediaType whatsmeow.MediaType
 
-				// LogJson(v.Message)
 				if v.Message.GetImageMessage() != nil {
 					img := v.Message.GetImageMessage()
 					mediaType = whatsmeow.MediaImage
@@ -173,6 +172,13 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					body["media_path"] = mediaPath
 					body["mime_type"] = mimeType
 
+				}
+
+				if v.Info.IsGroup {
+					info, err := client.GetGroupInfo(v.Info.Chat)
+					if err == nil {
+						body["group_info"] = info
+					}
 				}
 
 				// utils.LogJson(body)

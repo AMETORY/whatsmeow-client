@@ -16,3 +16,6 @@ PUT http://localhost:8088/v1/message/6283899133519:53@s.whatsapp.net/mark-read
 }
 ### DELETE DEVICE
 DELETE http://localhost:8088/v1/device-delete/6283899133519:57@s.whatsapp.net
+
+### CHECK NUMBER
+GET http://localhost:8088/v1/check-number/6283899133519:60@s.whatsapp.net/6281386862886
