@@ -160,6 +160,9 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					mimeType = ""
 				}
 
+				fmt.Println("INFO")
+				// utils.LogJson(v)
+
 				body := map[string]any{
 					"info":         v.Info,
 					"message":      v.Message,
@@ -181,7 +184,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					}
 				}
 
-				// utils.LogJson(body)
+				utils.LogJson(body)
 				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))
