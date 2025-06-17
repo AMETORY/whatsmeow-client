@@ -15,6 +15,7 @@ import (
 	mdl "github.com/AMETORY/whatsmeow-client/model"
 	"github.com/AMETORY/whatsmeow-client/objects"
 	"github.com/AMETORY/whatsmeow-client/service"
+	"github.com/AMETORY/whatsmeow-client/utils"
 	"github.com/gabriel-vasile/mimetype"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -58,6 +59,7 @@ func (wh *WaHandler) getClient(id string) *whatsmeow.Client {
 		fmt.Println(err)
 		return nil
 	}
+
 	for _, v := range wh.sessions.Clients {
 		if v == nil {
 			continue
@@ -373,6 +375,8 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		return
 	}
 
+	utils.LogJson(input)
+
 	var client *whatsmeow.Client = wh.getClient(input.JID)
 	if client == nil {
 		fmt.Println("ERROR #2", "NO CLIENT")
@@ -518,6 +522,20 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	// 	},
 	// }
 	// LogJson(dataMessage)
+	if input.RefID != nil && input.RefFrom != nil && input.RefText != nil {
+		dataMessage.Conversation = nil
+		dataMessage.ExtendedTextMessage = &waE2E.ExtendedTextMessage{
+			Text: proto.String(input.Text),
+			ContextInfo: &waE2E.ContextInfo{
+				StanzaID:    proto.String(*input.RefID),
+				Participant: proto.String(*input.RefFrom),
+				QuotedMessage: &waE2E.Message{
+					Conversation: proto.String(*input.RefText),
+				},
+			},
+		}
+	}
+	utils.LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
 		fmt.Println("ERROR #5", err.Error())
