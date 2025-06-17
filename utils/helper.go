@@ -89,5 +89,6 @@ func LogJson(v interface{}) {
 		fmt.Println(err)
 		return
 	}
+
 	fmt.Println(string(data))
 }

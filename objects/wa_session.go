@@ -149,6 +149,25 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					mimeType = doc.GetMimetype()
 				}
 
+				// utils.LogJson(v.Info)
+				profilePicURL := ""
+				profile, err := client.GetProfilePictureInfo(v.Info.Sender.ToNonAD(), nil)
+				if err == nil {
+
+					profilePicURL = profile.URL
+				} else {
+					fmt.Println("PROFILE ERROR", err)
+				}
+
+				if v.Info.IsGroup {
+					groupPicture, err := client.GetProfilePictureInfo(v.Info.Chat, nil)
+					if err == nil {
+						profilePicURL = groupPicture.URL
+					} else {
+						fmt.Println("GROUP PROFILE ERROR", err)
+					}
+				}
+
 				if isDownload {
 					mediaPath2, err := utils.DownloadMedia(client, mimeType, directPath, encFileHash, fileHash, mediaKey, fileLength, mediaType, mmsType)
 					if err == nil {
@@ -166,6 +185,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				body := map[string]any{
 					"info":         v.Info,
 					"message":      v.Message,
+					"profile_pic":  profilePicURL,
 					"sender":       v.Info.Chat.User,
 					"jid":          client.Store.ID.String(),
 					"session_id":   v.Info.Chat.String(),
