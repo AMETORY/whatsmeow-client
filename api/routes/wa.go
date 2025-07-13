@@ -10,6 +10,7 @@ import (
 func NewWaRoutes(r *gin.RouterGroup, sessions *objects.WaSession) {
 	handlers := handlers.NewWaHandler(sessions)
 	r.POST("/send-message", handlers.SendMessageHandler)
+	r.POST("/send-typing", handlers.SendIsTypingHandler)
 	r.POST("/create-qr", handlers.CreateQRHandler)
 	r.GET("/get-qr/:id", handlers.GetQRCodeHandler)
 	r.GET("/connected/:id", handlers.CheckConnectedHandler)

@@ -365,6 +365,7 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	service.REDIS.Publish("SYSTEM", "RESET")
 	c.JSON(200, gin.H{"message": "ok", "response": response, "data": input})
 }
+
 func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 	var input objects.WaMessage
@@ -544,6 +545,51 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{"message": "ok", "data": resp})
+}
+
+func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
+	var input objects.WaMessage
+	err := c.ShouldBindBodyWithJSON(&input)
+	if err != nil {
+		fmt.Println("ERROR #1", err.Error())
+		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
+		return
+	}
+
+	// utils.LogJson(input)
+
+	var client *whatsmeow.Client = wh.getClient(input.JID)
+	if client == nil {
+		fmt.Println("ERROR #2", "NO CLIENT")
+		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
+		return
+
+	}
+
+	if input.ChatPresence != "composing" {
+		input.ChatPresence = "paused"
+	}
+
+	// fmt.Println("CLIENT", client)
+	// clientLog := waLog.Stdout("Client", "INFO", true)
+	// client := whatsmeow.NewClient(deviceStore, clientLog)
+	receiver := input.To + "@s.whatsapp.net"
+	if input.IsGroup {
+		receiver = input.To
+	}
+	recipient, err := types.ParseJID(receiver)
+	if err != nil {
+		fmt.Println("ERROR #3", err.Error())
+		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
+		return
+	}
+	err = client.SendChatPresence(recipient, types.ChatPresence(input.ChatPresence), types.ChatPresenceMediaText)
+	if err != nil {
+		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
+		return
+	}
+
+	c.JSON(200, gin.H{"message": "ok"})
 }
 
 func (wh *WaHandler) CheckConnectedHandler(c *gin.Context) {
