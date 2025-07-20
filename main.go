@@ -45,14 +45,14 @@ func main() {
 
 	dbLog := waLog.Stdout("Database", "DEBUG", true)
 	// Make sure you add appropriate DB connector imports, e.g. github.com/mattn/go-sqlite3 for SQLite as we did in this minimal working example
-	container, err := sqlstore.New("postgres", "user="+user+" dbname=whatsapp sslmode=disable password="+password, dbLog)
+	container, err := sqlstore.New(ctx, "postgres", "user="+user+" dbname=whatsapp sslmode=disable password="+password, dbLog)
 	// container, err := sqlstore.New("sqlite3", "file:wa.db?_foreign_keys=on", dbLog)
 	if err != nil {
 		panic(err)
 	}
 
 	sessions := objects.NewWaSession(ctx, container, db)
-	deviceStore, err := container.GetAllDevices()
+	deviceStore, err := container.GetAllDevices(ctx)
 	if err != nil {
 		panic(err)
 	}

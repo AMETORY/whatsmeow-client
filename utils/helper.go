@@ -55,6 +55,7 @@ func GetExtensionFromMimeType(mimeType string) string {
 
 func DownloadMedia(client *whatsmeow.Client, mimeType, directPath string, encFileHash, fileHash, mediaKey []byte, fileLength int, mediaType whatsmeow.MediaType, mmsType string) (mediaPath string, err error) {
 	dataImg, err := client.DownloadMediaWithPath(
+		client.BackgroundEventCtx,
 		directPath,
 		encFileHash,
 		fileHash,

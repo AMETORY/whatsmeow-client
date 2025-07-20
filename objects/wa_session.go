@@ -159,14 +159,14 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					fmt.Println("PROFILE ERROR", err)
 				}
 
-				if v.Info.IsGroup {
-					groupPicture, err := client.GetProfilePictureInfo(v.Info.Chat, nil)
-					if err == nil {
-						profilePicURL = groupPicture.URL
-					} else {
-						fmt.Println("GROUP PROFILE ERROR", err)
-					}
-				}
+				// if v.Info.IsGroup {
+				// 	groupPicture, err := client.GetProfilePictureInfo(v.Info.Chat, nil)
+				// 	if err == nil {
+				// 		profilePicURL = groupPicture.URL
+				// 	} else {
+				// 		fmt.Println("GROUP PROFILE ERROR", err)
+				// 	}
+				// }
 
 				if isDownload {
 					mediaPath2, err := utils.DownloadMedia(client, mimeType, directPath, encFileHash, fileHash, mediaKey, fileLength, mediaType, mmsType)
@@ -203,8 +203,10 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 						body["group_info"] = info
 					}
 				}
+				if v.Info.Chat.String() != "status@broadcast" {
+					utils.LogJson(body)
+				}
 
-				utils.LogJson(body)
 				b, _ := json.Marshal(body)
 
 				// fmt.Println(string(b))

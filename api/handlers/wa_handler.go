@@ -93,7 +93,7 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		return
 	}
 
-	deviceStore, err := wh.sessions.Container.GetDevice(jid)
+	deviceStore, err := wh.sessions.Container.GetDevice(wh.sessions.Ctx, jid)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 2", "response": err.Error()})
 		return
@@ -105,12 +105,12 @@ func (wh *WaHandler) DeleteDeviceHandler(c *gin.Context) {
 		return
 
 	}
-	err = client.Logout()
+	err = client.Logout(wh.sessions.Ctx)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
-	err = wh.sessions.Container.DeleteDevice(deviceStore)
+	err = wh.sessions.Container.DeleteDevice(wh.sessions.Ctx, deviceStore)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
 		return
@@ -614,7 +614,7 @@ func (wh *WaHandler) DisconnectedHandler(c *gin.Context) {
 	}
 
 	// client.Disconnect()
-	err := client.Logout()
+	err := client.Logout(wh.sessions.Ctx)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
