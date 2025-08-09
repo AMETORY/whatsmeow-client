@@ -202,6 +202,14 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					if err == nil {
 						body["group_info"] = info
 					}
+					profile, err := client.GetProfilePictureInfo(info.JID.ToNonAD(), nil)
+					if err == nil {
+						fmt.Println("GROUP PROFILE", profile)
+						// profilePicURL = profile.URL
+						body["profile_pic"] = profile.URL
+					} else {
+						fmt.Println("PROFILE GROUP ERROR", err)
+					}
 				}
 				if v.Info.Chat.String() != "status@broadcast" {
 					utils.LogJson(body)

@@ -376,7 +376,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		return
 	}
 
-	utils.LogJson(input)
+	// utils.LogJson(input)
 
 	var client *whatsmeow.Client = wh.getClient(input.JID)
 	if client == nil {
@@ -536,13 +536,18 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 			},
 		}
 	}
-	utils.LogJson(dataMessage)
+	// utils.LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
 		fmt.Println("ERROR #5", err.Error())
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
 		return
 	}
+
+	fmt.Println("RESPONSE SEND MESSAGE DATA")
+	utils.LogJson(dataMessage)
+	fmt.Println("RESPONSE SEND MESSAGE")
+	utils.LogJson(resp)
 
 	c.JSON(200, gin.H{"message": "ok", "data": resp})
 }
