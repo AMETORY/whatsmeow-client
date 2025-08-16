@@ -536,6 +536,16 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 			},
 		}
 	}
+
+	if input.LocationMessage != nil {
+		dataMessage.LocationMessage = input.LocationMessage
+	}
+	if input.EventMessage != nil {
+		dataMessage.EventMessage = input.EventMessage
+	}
+	if input.ContactMessage != nil {
+		dataMessage.ContactMessage = input.ContactMessage
+	}
 	// utils.LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
