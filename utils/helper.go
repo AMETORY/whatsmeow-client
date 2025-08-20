@@ -2,7 +2,7 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 	"math/rand"
 	"os"
 	"time"
@@ -70,14 +70,14 @@ func DownloadMedia(client *whatsmeow.Client, mimeType, directPath string, encFil
 		if _, err := os.Stat("tmp"); os.IsNotExist(err) {
 			err = os.Mkdir("tmp", 0755)
 			if err != nil {
-				fmt.Println(err)
+				log.Println(err)
 			}
 		}
 		filename := RandomString(10) + GetExtensionFromMimeType(mimeType)
 		mediaPath = "/static/" + filename
 		err = os.WriteFile("tmp/"+filename, dataImg, 0644)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 
 		}
 	}
@@ -87,9 +87,18 @@ func DownloadMedia(client *whatsmeow.Client, mimeType, directPath string, encFil
 func LogJson(v interface{}) {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
-	fmt.Println(string(data))
+	log.Println(string(data))
+}
+func SaveJson(v interface{}) {
+	data, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	log.Println(string(data))
 }

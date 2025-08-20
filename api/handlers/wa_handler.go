@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -15,7 +16,6 @@ import (
 	mdl "github.com/AMETORY/whatsmeow-client/model"
 	"github.com/AMETORY/whatsmeow-client/objects"
 	"github.com/AMETORY/whatsmeow-client/service"
-	"github.com/AMETORY/whatsmeow-client/utils"
 	"github.com/gabriel-vasile/mimetype"
 
 	"go.mau.fi/whatsmeow/proto/waE2E"
@@ -56,7 +56,7 @@ func (wh *WaHandler) GetQRCodeHandler(c *gin.Context) {
 func (wh *WaHandler) getClient(id string) *whatsmeow.Client {
 	jid, err := types.ParseJID(id)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil
 	}
 
@@ -279,7 +279,7 @@ func (wh *WaHandler) MarkReadHandler(c *gin.Context) {
 		newSender, _ := types.ParseJID(parts[0] + "@s.whatsapp.net")
 		sender = newSender
 	}
-	fmt.Println(ids, time.Now(), sender, chatID, types.ReceiptTypeRead)
+	// log.Println(ids, time.Now(), sender, chatID, types.ReceiptTypeRead)
 	err = client.MarkRead(ids, time.Now(), chatID, sender, types.ReceiptTypeRead)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
@@ -303,14 +303,14 @@ func (wh *WaHandler) UpdateWebhookHandler(c *gin.Context) {
 
 	err = wh.sessions.DB.Where("j_id = ? OR session = ?", id, id).First(&data).Error
 	if err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 	}
 
 	data.Webhook = input.Webhook
 	data.HeaderKey = input.HeaderKey
 	err = wh.sessions.DB.Where("j_id = ? OR session = ?", id, id).Save(&data).Error
 	if err != nil {
-		fmt.Println(err)
+		// log.Println(err)
 	}
 	c.JSON(200, gin.H{"message": "ok"})
 
@@ -327,7 +327,7 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 	deviceStore := wh.sessions.Container.NewDevice()
 	clientLog := waLog.Stdout("Client", "INFO", true)
 	client := whatsmeow.NewClient(deviceStore, clientLog)
-	fmt.Println("client", client)
+	// log.Println("client", client)
 	if client != nil {
 		client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
 	}
@@ -345,15 +345,15 @@ func (wh *WaHandler) CreateQRHandler(c *gin.Context) {
 			// Render the QR code here
 			qrterminal.GenerateHalfBlock(evt.Code, qrterminal.L, os.Stdout)
 			// or just manually `echo 2@... | qrencode -t ansiutf8` in a terminal:
-			// fmt.Println("QR code:", evt.Code)
+			// log.Println("QR code:", evt.Code)
 		} else {
-			fmt.Println("Login event:", evt.Event)
+			// log.Println("Login event:", evt.Event)
 		}
 	}
 	response := <-qrWait
 	client.Connect()
 	client.AddEventHandler(wh.sessions.GetEventHandler(client, qrWait))
-	fmt.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
+	log.Println("CLIENT PAIRED", client.Store.ID.String(), client.IsConnected())
 	wh.sessions.AddSession(client)
 	service.REDIS.Del("WA-" + input.Session)
 	input.JID = client.Store.ID.String()
@@ -371,7 +371,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	var input objects.WaMessage
 	err := c.ShouldBindBodyWithJSON(&input)
 	if err != nil {
-		fmt.Println("ERROR #1", err.Error())
+		log.Println("ERROR #1", err.Error())
 		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
 		return
 	}
@@ -380,13 +380,13 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 	var client *whatsmeow.Client = wh.getClient(input.JID)
 	if client == nil {
-		fmt.Println("ERROR #2", "NO CLIENT")
+		log.Println("ERROR #2", "NO CLIENT")
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
 
 	}
 
-	// fmt.Println("CLIENT", client)
+	// log.Println("CLIENT", client)
 	// clientLog := waLog.Stdout("Client", "INFO", true)
 	// client := whatsmeow.NewClient(deviceStore, clientLog)
 	receiver := input.To + "@s.whatsapp.net"
@@ -395,7 +395,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	}
 	recipient, err := types.ParseJID(receiver)
 	if err != nil {
-		fmt.Println("ERROR #3", err.Error())
+		log.Println("ERROR #3", err.Error())
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
@@ -405,7 +405,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	if input.FileType != "" && input.FileUrl != "" {
 		resp, err := http.Get(input.FileUrl)
 		if err != nil {
-			fmt.Println("ERROR #4", err.Error())
+			log.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to fetch file", "response": err.Error()})
 			return
 		}
@@ -413,7 +413,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		fileBytes, err := io.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Println("ERROR #4", err.Error())
+			log.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to read file", "response": err.Error()})
 			return
 		}
@@ -422,7 +422,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		mimeType := mtype.String()
 
-		fmt.Println("MIME TYPE", mimeType)
+		log.Println("MIME TYPE", mimeType)
 
 		var fileType whatsmeow.MediaType
 		switch input.FileType {
@@ -440,7 +440,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 		respUpload, err := client.Upload(wh.sessions.Ctx, fileBytes, fileType)
 		if err != nil {
-			fmt.Println("ERROR #4", err.Error())
+			log.Println("ERROR #4", err.Error())
 			c.JSON(500, gin.H{"message": "failed to upload file", "response": err.Error()})
 			return
 		}
@@ -502,7 +502,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 
 	}
 
-	// fmt.Println("recipient", recipient)
+	// log.Println("recipient", recipient)
 
 	// dataMessage.TemplateMessage = &waE2E.TemplateMessage{
 	// 	HydratedTemplate: &waE2E.TemplateMessage_HydratedFourRowTemplate{
@@ -541,6 +541,7 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 		dataMessage.LocationMessage = input.LocationMessage
 	}
 	if input.EventMessage != nil {
+		dataMessage.Conversation = nil
 		dataMessage.EventMessage = input.EventMessage
 	}
 	if input.ContactMessage != nil {
@@ -549,15 +550,15 @@ func (wh *WaHandler) SendMessageHandler(c *gin.Context) {
 	// utils.LogJson(dataMessage)
 	resp, err := client.SendMessage(wh.sessions.Ctx, recipient, dataMessage)
 	if err != nil {
-		fmt.Println("ERROR #5", err.Error())
+		log.Println("ERROR #5", err.Error())
 		c.JSON(500, gin.H{"message": "failed 5", "response": err.Error()})
 		return
 	}
 
-	fmt.Println("RESPONSE SEND MESSAGE DATA")
-	utils.LogJson(dataMessage)
-	fmt.Println("RESPONSE SEND MESSAGE")
-	utils.LogJson(resp)
+	// log.Println("RESPONSE SEND MESSAGE DATA")
+	// utils.LogJson(dataMessage)
+	// log.Println("RESPONSE SEND MESSAGE")
+	// utils.LogJson(resp)
 
 	c.JSON(200, gin.H{"message": "ok", "data": resp})
 }
@@ -566,7 +567,7 @@ func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
 	var input objects.WaMessage
 	err := c.ShouldBindBodyWithJSON(&input)
 	if err != nil {
-		fmt.Println("ERROR #1", err.Error())
+		log.Println("ERROR #1", err.Error())
 		c.JSON(500, gin.H{"message": "failed 0", "response": err.Error()})
 		return
 	}
@@ -575,7 +576,7 @@ func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
 
 	var client *whatsmeow.Client = wh.getClient(input.JID)
 	if client == nil {
-		fmt.Println("ERROR #2", "NO CLIENT")
+		log.Println("ERROR #2", "NO CLIENT")
 		c.JSON(500, gin.H{"message": "failed 3", "response": "client not found"})
 		return
 
@@ -585,7 +586,7 @@ func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
 		input.ChatPresence = "paused"
 	}
 
-	// fmt.Println("CLIENT", client)
+	// log.Println("CLIENT", client)
 	// clientLog := waLog.Stdout("Client", "INFO", true)
 	// client := whatsmeow.NewClient(deviceStore, clientLog)
 	receiver := input.To + "@s.whatsapp.net"
@@ -594,7 +595,7 @@ func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
 	}
 	recipient, err := types.ParseJID(receiver)
 	if err != nil {
-		fmt.Println("ERROR #3", err.Error())
+		log.Println("ERROR #3", err.Error())
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
@@ -660,8 +661,8 @@ func (wh *WaHandler) IsOnWhatsappHandler(c *gin.Context) {
 func LogJson(v interface{}) {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	fmt.Println(string(data))
+	log.Println(string(data))
 }

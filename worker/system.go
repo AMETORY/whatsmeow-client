@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -10,7 +9,7 @@ import (
 )
 
 func GetSystemSignal() {
-	fmt.Println("SYSTEM WORKER STARTED")
+	log.Println("SYSTEM WORKER STARTED")
 	dataSub := service.REDIS.Subscribe("SYSTEM")
 	for {
 		msg, err := dataSub.ReceiveMessage()
@@ -18,7 +17,7 @@ func GetSystemSignal() {
 			log.Println(err)
 		}
 		if msg.Payload == "RESET" {
-			fmt.Println("SYSTEM WILL RESET IN 5 SECONDS")
+			log.Println("SYSTEM WILL RESET IN 5 SECONDS")
 			time.Sleep(5 * time.Second)
 			os.Exit(0)
 		}

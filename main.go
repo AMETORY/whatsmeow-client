@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"path/filepath"
+	"time"
 
 	"github.com/AMETORY/whatsmeow-client/api/routes"
 	mdl "github.com/AMETORY/whatsmeow-client/model"
@@ -26,6 +29,20 @@ import (
 
 func main() {
 	ctx := context.Background()
+	t := time.Now()
+	filename := t.Format("2006-01-02")
+	logDir := "log"
+	logPath := filepath.Join(logDir, filename+".log")
+
+	if err := os.MkdirAll(logDir, os.ModePerm); err != nil {
+		log.Fatalf("error creating directory: %v", err)
+	}
+	f, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
 
 	service.InitRedis()
 	db, err := service.InitDB()

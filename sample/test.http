@@ -19,3 +19,24 @@ DELETE http://localhost:8088/v1/device-delete/6283899133519:57@s.whatsapp.net
 
 ### CHECK NUMBER
 GET http://localhost:8088/v1/check-number/6283899133519:60@s.whatsapp.net/6281386862886
+
+
+### SEND MESSAGE
+POST http://localhost:8088/v1/send-message
+
+{
+  "jid": "6285810126705:1@s.whatsapp.net",
+  "file_type": "",
+  "file_url": "",
+  "to": "6281386862886",
+  "is_group": false,
+  "ref_id": null,
+  "ref_from": null,
+  "ref_text": null,
+  "chat_presence": "",
+  "event_message": {
+    "name": "Jadwal Dokter dr. Rahmat Supriatna",
+    "startTime": 1759280400,
+    "endTime": 1759284000
+  }
+}

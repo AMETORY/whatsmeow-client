@@ -17,5 +17,5 @@ type WaMessage struct {
 	ChatPresence    string                 `json:"chat_presence"`
 	EventMessage    *waE2E.EventMessage    `json:"event_message,omitempty"`
 	LocationMessage *waE2E.LocationMessage `json:"location_message,omitempty"`
-	ContactMessage  *waE2E.ContactMessage  `json:"location_message,omitempty"`
+	ContactMessage  *waE2E.ContactMessage  `json:"contact_message,omitempty"`
 }

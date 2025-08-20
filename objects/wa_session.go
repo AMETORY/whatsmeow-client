@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 
 	mdl "github.com/AMETORY/whatsmeow-client/model"
@@ -40,27 +40,27 @@ func (ws *WaSession) AddSession(client *whatsmeow.Client) {
 func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan string) func(interface{}) {
 	var WaDevice mdl.WaDevice
 	if client.Store.ID != nil {
-		fmt.Println("client store", client.Store.ID.String())
+		log.Println("client store", client.Store.ID.String())
 		err := ws.DB.Where("j_id = ?", client.Store.ID.String()).First(&WaDevice).Error
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 		}
 	}
 
 	return func(evt interface{}) {
 		switch v := evt.(type) {
 		case *events.PairSuccess:
-			fmt.Println("Pair success", client.Store.ID)
+			log.Println("Pair success", client.Store.ID)
 			// ws.AddSession(client)
 			qrWait <- client.Store.ID.String()
 		case *events.Connected:
 
-			fmt.Println("Connected", client.Store.ID)
+			log.Println("Connected", client.Store.ID)
 		case *events.Receipt:
-			fmt.Println("Receipt")
-			fmt.Println("RECEIPT TYPE", v.Type)
-			fmt.Println("RECEIPT IDS", v.MessageIDs)
-			fmt.Println("RECEIPT SENDER", v.MessageSender)
+			log.Println("Receipt")
+			log.Println("RECEIPT TYPE", v.Type)
+			log.Println("RECEIPT IDS", v.MessageIDs)
+			log.Println("RECEIPT SENDER", v.MessageSender)
 			if v.Type == "read" && WaDevice.Webhook != "" {
 				body := map[string]any{
 					"info":         v,
@@ -68,10 +68,10 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				}
 				b, _ := json.Marshal(body)
 
-				// fmt.Println(string(b))
+				// log.Println(string(b))
 				req, err := http.NewRequest("POST", WaDevice.Webhook, bytes.NewBuffer(b))
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				req.Header.Set("Content-Type", "application/json")
 				if WaDevice.HeaderKey != "" {
@@ -80,7 +80,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				if resp != nil && resp.Body != nil {
 					defer resp.Body.Close()
@@ -156,7 +156,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 					profilePicURL = profile.URL
 				} else {
-					fmt.Println("PROFILE ERROR", err)
+					log.Println("PROFILE ERROR", err)
 				}
 
 				// if v.Info.IsGroup {
@@ -164,7 +164,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				// 	if err == nil {
 				// 		profilePicURL = groupPicture.URL
 				// 	} else {
-				// 		fmt.Println("GROUP PROFILE ERROR", err)
+				// 		log.Println("GROUP PROFILE ERROR", err)
 				// 	}
 				// }
 
@@ -173,13 +173,13 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 					if err == nil {
 						mediaPath = mediaPath2
 					} else {
-						fmt.Println("ERROR", err)
+						log.Println("ERROR", err)
 					}
 				} else {
 					mimeType = ""
 				}
 
-				fmt.Println("INFO")
+				log.Println("INFO")
 				// utils.LogJson(v)
 
 				body := map[string]any{
@@ -203,25 +203,25 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 						body["group_info"] = info
 						profile, err := client.GetProfilePictureInfo(info.JID.ToNonAD(), nil)
 						if err == nil {
-							fmt.Println("GROUP PROFILE", profile)
+							log.Println("GROUP PROFILE", profile)
 							// profilePicURL = profile.URL
 							body["profile_pic"] = profile.URL
 						} else {
-							fmt.Println("PROFILE GROUP ERROR", err)
+							log.Println("PROFILE GROUP ERROR", err)
 						}
 					}
 
 				}
 				if v.Info.Chat.String() != "status@broadcast" {
-					utils.LogJson(body)
+					utils.SaveJson(body)
 				}
 
 				b, _ := json.Marshal(body)
 
-				// fmt.Println(string(b))
+				// log.Println(string(b))
 				req, err := http.NewRequest("POST", WaDevice.Webhook, bytes.NewBuffer(b))
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				req.Header.Set("Content-Type", "application/json")
 				if WaDevice.HeaderKey != "" {
@@ -230,7 +230,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				client := &http.Client{}
 				resp, err := client.Do(req)
 				if err != nil {
-					fmt.Println(err)
+					log.Println(err)
 				}
 				if resp != nil && resp.Body != nil {
 					defer resp.Body.Close()
@@ -244,8 +244,8 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 func LogJson(v interface{}) {
 	data, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
-	fmt.Println(string(data))
+	log.Println(string(data))
 }
