@@ -174,7 +174,7 @@ func (wh *WaHandler) GetGroupInfoHandler(c *gin.Context) {
 		return
 
 	}
-	info, err := client.GetGroupInfo(jgroupId)
+	info, err := client.GetGroupInfo(wh.sessions.Ctx, jgroupId)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
 		return
@@ -192,7 +192,7 @@ func (wh *WaHandler) GetGroupsHandler(c *gin.Context) {
 
 	}
 
-	groups, err := client.GetJoinedGroups()
+	groups, err := client.GetJoinedGroups(wh.sessions.Ctx)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 3", "response": err.Error()})
 		return
@@ -280,7 +280,7 @@ func (wh *WaHandler) MarkReadHandler(c *gin.Context) {
 		sender = newSender
 	}
 	// log.Println(ids, time.Now(), sender, chatID, types.ReceiptTypeRead)
-	err = client.MarkRead(ids, time.Now(), chatID, sender, types.ReceiptTypeRead)
+	err = client.MarkRead(wh.sessions.Ctx, ids, time.Now(), chatID, sender, types.ReceiptTypeRead)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
 		return
@@ -599,7 +599,7 @@ func (wh *WaHandler) SendIsTypingHandler(c *gin.Context) {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return
 	}
-	err = client.SendChatPresence(recipient, types.ChatPresence(input.ChatPresence), types.ChatPresenceMediaText)
+	err = client.SendChatPresence(wh.sessions.Ctx, recipient, types.ChatPresence(input.ChatPresence), types.ChatPresenceMediaText)
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 1", "response": err.Error()})
 		return
@@ -650,7 +650,7 @@ func (wh *WaHandler) IsOnWhatsappHandler(c *gin.Context) {
 
 	}
 
-	isOnWhatsapp, err := client.IsOnWhatsApp([]string{phone})
+	isOnWhatsapp, err := client.IsOnWhatsApp(wh.sessions.Ctx, []string{phone})
 	if err != nil {
 		c.JSON(500, gin.H{"message": "failed 4", "response": err.Error()})
 		return

@@ -151,7 +151,7 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 
 				// utils.LogJson(v.Info)
 				profilePicURL := ""
-				profile, err := client.GetProfilePictureInfo(v.Info.Sender.ToNonAD(), nil)
+				profile, err := client.GetProfilePictureInfo(ws.Ctx, v.Info.Sender.ToNonAD(), nil)
 				if err == nil {
 
 					profilePicURL = profile.URL
@@ -198,10 +198,10 @@ func (ws *WaSession) GetEventHandler(client *whatsmeow.Client, qrWait chan strin
 				}
 
 				if v.Info.IsGroup {
-					info, err := client.GetGroupInfo(v.Info.Chat)
+					info, err := client.GetGroupInfo(ws.Ctx, v.Info.Chat)
 					if err == nil {
 						body["group_info"] = info
-						profile, err := client.GetProfilePictureInfo(info.JID.ToNonAD(), nil)
+						profile, err := client.GetProfilePictureInfo(ws.Ctx, info.JID.ToNonAD(), nil)
 						if err == nil {
 							log.Println("GROUP PROFILE", profile)
 							// profilePicURL = profile.URL
